@@ -35,6 +35,24 @@ class RegistroGrupos:
         self.criar(grupo_id, grupo_id, [self.meu_id, int(outro_id)])
         return grupo_id
 
+    def garantir_privado(self, grupo_id):
+        # Um grupo "priv-a-b" tem os dois membros codificados no proprio id. Se uma
+        # mensagem chega para uma conversa privada que este no ainda nao abriu, mas
+        # da qual ele participa, registra a conversa aqui. Devolve True se registrou.
+        if grupo_id in self.grupos or not grupo_id.startswith("priv-"):
+            return False
+        partes = grupo_id.split("-")
+        if len(partes) != 3:
+            return False
+        try:
+            id_a, id_b = int(partes[1]), int(partes[2])
+        except ValueError:
+            return False
+        if self.meu_id not in (id_a, id_b):
+            return False
+        self.criar(grupo_id, grupo_id, [id_a, id_b])
+        return True
+
     def sou_membro(self, grupo_id):
         grupo = self.grupos.get(grupo_id)
         return grupo is not None and self.meu_id in grupo["membros"]

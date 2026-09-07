@@ -6,6 +6,9 @@ Este manual explica **como executar e usar** o sistema e **por que** cada decis�
 de projeto foi tomada. A parte "como fazer" vem primeiro; a justificativa das
 escolhas está na Seção 6 e serve de base para o relatório.
 
+Para a **base teórica** (relógios lógicos, ordem total, Chandy-Lamport, eleição) e
+a preparação do seminário, ver `manual_teorico.md`.
+
 ---
 
 ## 1. O que é
@@ -108,16 +111,16 @@ para o relatório.
 
 | Área | Para que serve |
 |------|----------------|
-| Cabeçalho | Id do nó, nome do nó, papel (líder ou comum). |
+| Cabeçalho | `No <id>` e, se definido, o nome do nó; e o papel (líder ou comum). |
 | "Nome deste nó" + "Definir nome" | Campo para digitar/alterar o nome do nó em tempo de execução (mesma coisa que o `--nome`, mas pela tela). |
-| Seletor "Conversa" | Escolhe onde a mensagem vai: `geral`, um grupo de que o nó é membro, ou uma conversa privada. |
+| Seletor "Conversa" | Escolhe a conversa ativa: `geral`, um grupo de que o nó é membro, ou uma conversa privada. **Também define o que o painel "Mensagens do chat" mostra.** |
 | Campo de texto + "Enviar" | Envia a mensagem para a conversa selecionada. |
 | "Criar grupo" | Nome do grupo + seleção de membros; abre a conversa nos nós escolhidos. |
 | "Nova conversa privada" | Escolhe o id do outro nó e abre a conversa `priv-a-b`. |
 | Painel "Relógio vetorial" | O vetor atual do nó e o `num_seq` que ele espera entregar em seguida. |
 | **Ordem local** | Tudo que **este** nó emitiu ou entregou, na ordem em que aconteceu. |
-| **Ordem global** | A fila de mensagens por `num_seq` — deve ser **idêntica em todos os nós**. |
-| Log do sistema | Eleições, marcadores de snapshot, retransmissões. |
+| **Mensagens do chat** | As mensagens **da conversa selecionada**, na ordem global (`num_seq`). Trocar de conversa no seletor troca o que aparece aqui. Para a mesma conversa (ex.: `geral`), a lista é **idêntica em todos os nós** — é a evidência da ordem total (R4). |
+| Log do sistema | Eleições, marcadores de snapshot, retransmissões, abertura de conversa privada pelo outro lado. |
 | "Capturar estado global" | Dispara o snapshot de Chandy-Lamport. |
 | "Forçar eleição" | Inicia o algoritmo do anel sem esperar o líder cair. |
 | "Simular queda" | Encerra este processo — use no nó líder para demonstrar a reeleição. |
@@ -127,22 +130,28 @@ para o relatório.
 ## 5. Como fazer cada coisa
 
 ### Enviar mensagem para o grupo
-Seletor em `geral`, digite, "Enviar". Em segundos a mensagem aparece na **ordem
-global** de todos os nós, na mesma posição.
+Seletor em `geral`, digite, "Enviar". Em segundos a mensagem aparece no painel
+**Mensagens do chat** de todos os nós, na mesma posição (`num_seq`).
+
+### Alternar entre conversas
+O seletor "Conversa" define a conversa ativa. O painel **Mensagens do chat** mostra
+só as mensagens dessa conversa — trocar no seletor troca a vista. Nós que não são
+membros de um grupo simplesmente não têm aquela conversa no seletor (não aparece
+"mensagem restrita" para poluir a tela). A ordem/`num_seq` das mensagens que você
+vê continua sendo a ordem global.
 
 ### Criar um grupo com membros escolhidos
 "Criar grupo" → digite o nome → marque os ids que vão participar (você entra
 automaticamente) → confirmar. O grupo aparece no seletor "Conversa" nos nós
 membros. Como o pedido passa pelo sequenciador do líder, todos os nós registram o
-grupo na mesma posição da ordem global, antes de qualquer mensagem dele. Nós que
-não são membros não veem a conversa e mostram `"[mensagem de grupo restrito]"` na
-ordem global.
+grupo na mesma posição da ordem global, antes de qualquer mensagem dele.
 
 ### Abrir e usar uma conversa privada
 "Nova conversa privada" → escolha o id do outro nó. A conversa `priv-a-b` aparece
-no seletor. Mensagens nela só são exibidas nos dois nós membros; os demais mostram
-`"[mensagem de grupo restrito]"` na ordem global (a posição/`num_seq` continua
-visível).
+no seletor e fica ativa. **Não é preciso o outro lado abrir primeiro:** ao chegar a
+primeira mensagem, o nó de destino registra a conversa automaticamente (o log
+avisa) e ela aparece no seletor dele. Os demais nós não participam e não veem a
+conversa.
 
 ### Capturar o estado global
 Clique em "Capturar estado global" (normalmente no líder). O sistema executa
@@ -157,8 +166,9 @@ mostra a mensagem de eleição circulando o anel e depois o anúncio do coordena
 O maior id ativo vira o novo líder e o chat volta a ordenar normalmente.
 
 ### Provar a ordem total (critério de correção do roteiro)
-Ao fim de uma simulação, compare o painel **Ordem global** de dois ou mais nós:
-a sequência de `num_seq` e de mensagens deve ser exatamente igual.
+Deixe a conversa `geral` selecionada em dois ou mais nós e compare o painel
+**Mensagens do chat**: a sequência de `#num_seq` e de mensagens deve ser exatamente
+igual em todos (todos os nós são membros de `geral`, então nada fica escondido).
 
 ---
 

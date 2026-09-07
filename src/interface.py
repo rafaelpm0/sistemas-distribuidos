@@ -70,8 +70,9 @@ class Janela:
         coluna_esquerda.pack(side="left", fill="both", expand=True)
         tk.Label(coluna_esquerda, text="Ordem local (o que este no emitiu/entregou)").pack(anchor="w")
         self.texto_ordem_local = _area_texto(coluna_esquerda, altura=9)
-        tk.Label(coluna_esquerda, text="Ordem global (fila por num_seq - igual em todos)").pack(anchor="w")
-        self.texto_ordem_global = _area_texto(coluna_esquerda, altura=11)
+        self.rotulo_mensagens = tk.Label(coluna_esquerda, anchor="w", justify="left")
+        self.rotulo_mensagens.pack(anchor="w")
+        self.texto_mensagens = _area_texto(coluna_esquerda, altura=11)
 
         coluna_direita = tk.Frame(painel, width=220)
         coluna_direita.pack(side="right", fill="y")
@@ -113,8 +114,7 @@ class Janela:
                                        f"Id do outro no {outros}:", parent=self.janela)
         if alvo in outros:
             grupo_id = self.nucleo.abrir_privada(alvo)
-            self.grupo_escolhido.set(grupo_id)
-            self._atualizar_paineis()
+            self._escolher_conversa(grupo_id)
 
     def _simular_queda(self):
         if messagebox.askyesno("Simular queda", "Encerrar este no agora?"):
@@ -148,6 +148,7 @@ class Janela:
     # ------------------------------------------------------------------ paineis
 
     def _atualizar_paineis(self):
+        conversa = self.grupo_escolhido.get()
         with self.nucleo.trava_estado:
             papel = "LIDER" if self.nucleo.eleicao.sou_lider else "comum"
             relogio = str(self.nucleo.relogio)
@@ -155,27 +156,38 @@ class Janela:
             pendentes = len(self.nucleo.ordem.pendentes)
             conversas = self.nucleo.grupos.conversas_visiveis()
             linhas_local = [self._formatar_local(evento) for evento in self.nucleo.ordem_local]
-            linhas_global = [self._formatar_global(m) for m in self.nucleo.ordem_global]
+            # So as mensagens da conversa selecionada, na ordem global (num_seq).
+            linhas_mensagens = [self._formatar_mensagem(m) for m in self.nucleo.ordem_global
+                                if m.get("grupo") == conversa]
 
-        nome_no = self.nucleo.meu_nome or "-"
-        self.rotulo_cabecalho.config(text=f"No {self.nucleo.meu_id}   |   Nome: {nome_no}   |   Papel: {papel}")
+        cabecalho = f"No {self.nucleo.meu_id}"
+        if self.nucleo.meu_nome:
+            cabecalho += f" - {self.nucleo.meu_nome}"
+        self.rotulo_cabecalho.config(text=f"{cabecalho}   |   Papel: {papel}")
         self.rotulo_estado.config(text=f"nos: {self.nucleo.config.total_nos}")
         self.rotulo_relogio.config(text=relogio)
         self.rotulo_buffer.config(text=f"Proximo num_seq esperado: {esperado}\nBuffer pendentes: {pendentes}")
 
-        self._recarregar_seletor([grupo_id for grupo_id, _ in conversas],
-                                 {grupo_id: nome for grupo_id, nome in conversas})
+        nomes_conversa = {grupo_id: nome for grupo_id, nome in conversas}
+        self.rotulo_mensagens.config(
+            text=f"Mensagens do chat - {nomes_conversa.get(conversa, conversa)} (ordem global, por num_seq)")
+        self._recarregar_seletor([grupo_id for grupo_id, _ in conversas], nomes_conversa)
         _preencher(self.texto_ordem_local, linhas_local)
-        _preencher(self.texto_ordem_global, linhas_global)
+        _preencher(self.texto_mensagens, linhas_mensagens)
 
     def _recarregar_seletor(self, ids_grupos, nomes):
         menu = self.seletor_conversa["menu"]
         menu.delete(0, "end")
         for grupo_id in ids_grupos:
             rotulo = nomes.get(grupo_id, grupo_id)
-            menu.add_command(label=rotulo, command=lambda g=grupo_id: self.grupo_escolhido.set(g))
+            menu.add_command(label=rotulo, command=lambda g=grupo_id: self._escolher_conversa(g))
         if self.grupo_escolhido.get() not in ids_grupos:
             self.grupo_escolhido.set(GERAL)
+
+    def _escolher_conversa(self, grupo_id):
+        # Troca a conversa ativa e repinta na hora (sem esperar o proximo evento).
+        self.grupo_escolhido.set(grupo_id)
+        self._atualizar_paineis()
 
     def _formatar_local(self, evento):
         acao, grupo, autor, texto, num_seq = evento
@@ -184,19 +196,13 @@ class Janela:
             return f"envio     -> {nome:<12} \"{texto}\""
         return f"entrega   #{num_seq} de {autor}  {nome:<12} \"{texto}\""
 
-    def _formatar_global(self, mensagem):
+    def _formatar_mensagem(self, mensagem):
         num_seq = mensagem.get("num_seq")
         origem = mensagem.get("origem")
-        grupo = mensagem.get("grupo")
-        nome = self.nucleo.grupos.nome_de(grupo)
         payload = mensagem.get("payload", {})
         if "acao" in payload:
-            conteudo = f"[grupo '{payload.get('nome', nome)}' criado]"
-        elif self.nucleo.grupos.sou_membro(grupo):
-            conteudo = f"\"{payload.get('texto', '')}\""
-        else:
-            conteudo = "[mensagem de grupo restrito]"
-        return f"#{num_seq:<3} de {origem}  {nome:<14} {conteudo}"
+            return f"#{num_seq:<3} -- conversa criada pelo no {origem} --"
+        return f"#{num_seq:<3} No {origem}: {payload.get('texto', '')}"
 
     # ------------------------------------------------------------------ log / snapshot
 

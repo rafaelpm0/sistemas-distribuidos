@@ -2,8 +2,10 @@
 
 Disciplina de Sistemas Distribuídos (UNIVALI, Prof. Ramicés) — Entrega 1 em 09/09/2026.
 
-Este documento descreve **o que vamos construir e como**. O código ainda não foi
-escrito; aqui ficam as decisões, os algoritmos passo a passo e a divisão em módulos.
+Este documento descreve **o que vamos construir e como**: as decisões, os
+algoritmos passo a passo e a divisão em módulos. O código já foi implementado em
+`src/` (ver `manual_de_uso.md` para executar). A base teórica e a preparação do
+seminário estão em `manual_teorico.md`.
 
 ---
 
@@ -219,8 +221,10 @@ menor. Qualquer ordem total válida põe A antes de C.
 - **Grupo nomeado** — id `g-<criador>-<seq>`, um **nome amigável** escolhido pelo
   usuário e uma **lista de membros escolhida na criação**. Ex.: id `g-3-1`, nome
   "Trabalho SD", membros `{1, 3, 5}`. O criador entra automaticamente.
-- **`priv-a-b`** (a < b) — privado, 2 membros fixos `{a, b}`. É o atalho para um
-  grupo de 2 pessoas, sem precisar de nome; criado ao abrir "conversa privada".
+- **`priv-a-b`** (a < b) — privado, 2 membros fixos `{a, b}`, **codificados no id**.
+  Atalho para um grupo de 2 pessoas, sem nome. Quem abre "conversa privada" registra
+  localmente; o outro participante registra ao receber a primeira mensagem
+  (`garantir_privado` deriva os membros do id) — não precisa abrir antes.
 
 ### 7.2 Criar um grupo nomeado
 
@@ -242,11 +246,12 @@ menor. Qualquer ordem total válida põe A antes de C.
 ### 7.3 Enviar e privacidade
 
 - O seletor "Conversa" lista `geral`, cada grupo nomeado de que o nó é membro e
-  cada conversa privada aberta. Enviar funciona igual para todos.
-- Em `tentar_entregar()`, o texto só vai para a vista da conversa se
-  `registro.sou_membro(grupo)`. Um nó **não-membro** registra o `num_seq` na fila
-  global como `"[mensagem de grupo restrito]"` — a posição continua visível, o
-  conteúdo não.
+  cada conversa privada da qual ele participa. Enviar funciona igual para todos.
+  O painel "Mensagens do chat" mostra só a conversa selecionada.
+- Na entrega, o texto só vai para a vista da conversa e a ordem local se
+  `registro.sou_membro(grupo)`. Um nó **não-membro** ainda registra o `num_seq` na
+  fila global (a ordem total não muda), mas não vê o conteúdo — e, como aquela
+  conversa nem aparece no seletor dele, a tela não mostra "restrito".
 - Privacidade é **lógica**: sem criptografia, o datagrama chega fisicamente a
   todos os nós do multicast. Limitação registrada no relatório.
 
@@ -377,7 +382,7 @@ Layout de uma janela (uma por nó):
 
 ```
 +---------------------------------------------------------------+
-| Nó 3   |  Nome: Alice   |  Papel: comum                       |
+| Nó 3 - Alice   |   Papel: comum                               |
 | Nome deste nó: [ Alice        ] [ Definir nome ]              |
 +----------------------------+--------------------------------- +
 | Conversa: [ geral         v]| Relógio vetorial: [1:4, 2:2, 3:5]|
@@ -391,10 +396,10 @@ Layout de uma janela (uma por nó):
 |  envio    G  "oi"            v=[1:4,2:2,3:5]                   |
 |  entrega  #10 de 7 "e ai"    v=[1:4,2:2,3:5]                   |
 +---------------------------------------------------------------+
-| ORDEM GLOBAL (fila por num_seq — igual em todos os nós)       |
-|  #08  de 2  geral        "bom dia"                            |
-|  #09  de 5  priv-3-5     "[mensagem de grupo restrito]"       |
-|  #10  de 7  geral        "e ai"                               |
+| MENSAGENS DO CHAT - geral (ordem global, por num_seq)         |
+|  #08  No 2: bom dia                                           |
+|  #10  No 7: e ai                                              |
+|  (as mensagens de priv-3-5 aparecem ao selecionar priv-3-5)   |
 +---------------------------------------------------------------+
 | LOG DO SISTEMA                                                |
 |  eleição iniciada por nó 4 ... COORDENADOR: líder = 7         |
@@ -413,7 +418,9 @@ Elementos mínimos exigidos pelo R5, todos presentes:
   a aparecer no seletor "Conversa" dos nós membros.
 - **Ordem local** → painel com cada envio e cada entrega observados por este nó, na
   ordem em que aconteceram, com o vetor no momento.
-- **Ordem global** → fila por `num_seq`, que deve ser idêntica em todos os nós.
+- **Ordem global** → painel "Mensagens do chat": as mensagens da conversa
+  selecionada, na ordem do `num_seq`. Para `geral` (todos são membros) a lista é
+  idêntica em todos os nós — é a evidência da ordem total.
 - Extras sugeridos pelo roteiro: relógio vetorial atual e tamanho do buffer.
 
 Atualização sem travar o Tkinter: o núcleo põe eventos (`"entrega"`, `"lider"`,

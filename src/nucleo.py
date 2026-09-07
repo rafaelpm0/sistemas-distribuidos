@@ -124,6 +124,11 @@ class Nucleo:
             self.relogio.ao_entregar(mensagem["relogio_vetorial"])
         self.ordem_global.append(mensagem)
 
+        # Se e uma conversa privada da qual eu participo mas que ainda nao abri
+        # (quem abriu foi o outro no), registro a conversa agora.
+        if self.grupos.garantir_privado(mensagem["grupo"]):
+            self.registrar_log(f"conversa privada {mensagem['grupo']} aberta com o no {origem}")
+
         payload = mensagem.get("payload", {})
         if "acao" in payload:
             self._aplicar_acao_grupo(mensagem)
