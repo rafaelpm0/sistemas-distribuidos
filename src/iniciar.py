@@ -1,12 +1,15 @@
 # Gera o nos.json para N nos e sobe N processos, um por no (cada um abre a sua janela).
-# Uso: python iniciar.py --n 3   (ou 8, ou 15)
+# Uso (a partir da raiz do projeto): python src/iniciar.py --n 3   (ou 8, ou 15)
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 
 from configuracao import GRUPO_MULTICAST, PORTA_GRUPO
+
+PASTA_SRC = os.path.dirname(os.path.abspath(__file__))  # onde este arquivo e o no.py estao
 
 
 def gerar_config(quantidade_de_nos, caminho):
@@ -35,7 +38,8 @@ def principal():
 
     processos = []
     for id_no in range(1, argumentos.n + 1):
-        comando = [sys.executable, "no.py", "--id", str(id_no), "--config", argumentos.config]
+        comando = [sys.executable, os.path.join(PASTA_SRC, "no.py"),
+                   "--id", str(id_no), "--config", argumentos.config]
         if id_no <= len(argumentos.nomes):
             comando += ["--nome", argumentos.nomes[id_no - 1]]
         processo = subprocess.Popen(comando)

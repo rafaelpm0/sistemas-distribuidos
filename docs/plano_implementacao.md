@@ -32,7 +32,7 @@ escrito; aqui ficam as decisões, os algoritmos passo a passo e a divisão em m�
 |---|-----------|-----------------|
 | R1 | Comunicação de grupo (multicast) | `rede.py` + grupo `224.1.1.1:5007`. Uma mensagem de grupo chega a todos os nós. |
 | R2 | Tema (chat) | `nucleo.py` + `interface.py`: mensagem privada, mensagem de grupo e criação de grupos com membros escolhidos. |
-| R3 | Nº de nós configurável, ≥ 15 | `iniciar.py --n 3 / 8 / 15` gera `nos.json` e sobe os processos sem tocar no código. |
+| R3 | Nº de nós configurável, ≥ 15 | `src/iniciar.py --n 3 / 8 / 15` gera `nos.json` e sobe os processos sem tocar no código. |
 | R4 | Ordem total | `ordem_total.py`: todos entregam na ordem do `num_seq` do líder → fila global idêntica. |
 | R5 | Tela do nó | `interface.py`: enviar p/ nó, enviar p/ grupo, ordem local, ordem global, relógio vetorial, buffer. |
 | R6 | Estado global | `snapshot.py`: comando de menu dispara Chandy-Lamport e exibe a fotografia. |
@@ -426,11 +426,26 @@ repinta.
 
 Um arquivo por classe/responsabilidade. Cada arquivo curto e focado.
 
-| Arquivo | Conteúdo |
+Organização em pastas (todos os comandos rodam a partir da raiz do projeto):
+
+```
+raiz/
+├── src/       todo o código (os módulos abaixo + interface.py, no.py, iniciar.py)
+├── testes/    teste.py
+├── docs/      manual_de_uso.md, plano_implementacao.md, roteiro.pdf
+└── nos.json   gerado por src/iniciar.py (ou pelos testes)
+```
+
+`src/` é uma pasta plana (sem `__init__.py`): como o Python põe a pasta do script
+em `sys.path`, os `import` entre os módulos continuam simples (`from eleicao import
+...`). Só `src/iniciar.py` e `testes/teste.py` montam o caminho absoluto até
+`src/no.py` para chamar o `subprocess`.
+
+| Arquivo (em `src/`, salvo indicação) | Conteúdo |
 |---------|----------|
 | `iniciar.py` | Gera `nos.json` para `N` nós e sobe `N` processos `no.py` (via `subprocess`), cada um em sua janela. |
 | `no.py` | Entrada de um nó: lê `--id`, `--nome` (opcional, só exibição) e `--config`, cria `Nucleo` e `Janela`, inicia as threads, chama `mainloop()`. Com `--sem-interface --script <arq> --saida <arq>` executa um roteiro de comandos e grava o estado final (usado nos testes). |
-| `teste.py` | Sobe vários nós de verdade (processos separados), cada um com um roteiro, e compara as saídas: ordem total idêntica, criação de grupo, queda do líder, snapshot. |
+| `../testes/teste.py` | Sobe vários nós de verdade (processos separados), cada um com um roteiro, e compara as saídas: ordem total idêntica, criação de grupo, queda do líder, snapshot. |
 | `configuracao.py` | Carrega `nos.json`; expõe `ids`, `N`, `grupo_multicast`, `porta`; constantes (`INTERVALO_HEARTBEAT`, `T_FALHA`, `T_RETRANSMISSAO`, `TTL`, atraso opcional de envio). |
 | `mensagem.py` | Constantes de `tipo`; `montar(...)`, `serializar(dict)`, `desserializar(bytes)`. |
 | `rede.py` | Socket multicast de envio e de recepção (`SO_REUSEADDR`, `IP_ADD_MEMBERSHIP`, TTL); `enviar(dict)`; thread receptora → `fila_recebidas`. |
@@ -467,9 +482,9 @@ roteiro pede a tabela de endereços no relatório.
 
 ### 13.2 Subir os nós
 
-- `python iniciar.py --n 3` → gera `nos.json` com 3 nós e abre 3 janelas.
-- `python iniciar.py --n 8` e `--n 15` → idem (requisito R3, sem tocar no código).
-- Manual: `python no.py --id 3 --config nos.json` em cada terminal.
+- `python src/iniciar.py --n 3` → gera `nos.json` com 3 nós e abre 3 janelas.
+- `python src/iniciar.py --n 8` e `--n 15` → idem (requisito R3, sem tocar no código).
+- Manual: `python src/no.py --id 3 --config nos.json` em cada terminal.
 
 Na mesma máquina, `SO_REUSEADDR` (e `SO_REUSEPORT` onde existir) permite vários nós
 na mesma porta multicast; TTL baixo (1–2).

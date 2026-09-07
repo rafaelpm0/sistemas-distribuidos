@@ -1,7 +1,7 @@
 # Testes automatizados: sobem varios nos de verdade (processos separados, so rede),
 # cada um executa um roteiro de comandos e grava a saida; depois comparamos.
 #
-# Uso: python teste.py
+# Uso (a partir da raiz do projeto): python testes/teste.py
 
 import json
 import os
@@ -10,6 +10,8 @@ import sys
 import tempfile
 
 PASTA_TESTE = os.path.join(tempfile.gettempdir(), "chat_distribuido_teste")
+# no.py fica em ../src em relacao a este arquivo (testes/).
+CAMINHO_NO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "no.py")
 
 
 def _preparar_pasta():
@@ -34,7 +36,6 @@ def _rodar(quantidade, roteiros):
     # roteiros: dict {id_no: [linhas de comando]}. Devolve dict {id_no: saida_json}.
     _preparar_pasta()
     caminho_config = _gerar_config(quantidade)
-    raiz = os.path.dirname(os.path.abspath(__file__))
 
     processos = []
     for id_no in range(1, quantidade + 1):
@@ -43,7 +44,7 @@ def _rodar(quantidade, roteiros):
             arquivo.write("\n".join(roteiros.get(id_no, [])))
         caminho_saida = os.path.join(PASTA_TESTE, f"saida_{id_no}.json")
         processos.append(subprocess.Popen([
-            sys.executable, os.path.join(raiz, "no.py"),
+            sys.executable, CAMINHO_NO,
             "--id", str(id_no), "--config", caminho_config,
             "--sem-interface", "--script", caminho_script, "--saida", caminho_saida,
         ]))

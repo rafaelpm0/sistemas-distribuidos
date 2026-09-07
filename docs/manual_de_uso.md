@@ -35,18 +35,21 @@ só se falam por **mensagens de rede multicast**. O sistema garante:
 
 ## 3. Como executar
 
+Todos os comandos são rodados **a partir da raiz do projeto** (a pasta que contém
+`src/`, `testes/` e `docs/`). O código fica em `src/`, os testes em `testes/`.
+
 ### 3.1 Forma rápida (recomendada para a demonstração)
 
 ```
-python iniciar.py --n 3
+python src/iniciar.py --n 3
 ```
 
 Isso gera o `nos.json` para 3 nós e abre **3 janelas**, uma por nó. Para os outros
 tamanhos exigidos pelo roteiro:
 
 ```
-python iniciar.py --n 8
-python iniciar.py --n 15
+python src/iniciar.py --n 8
+python src/iniciar.py --n 15
 ```
 
 O código não muda entre os tamanhos — só o argumento `--n`.
@@ -55,7 +58,7 @@ Opcionalmente dá para nomear os nós (aparece no cabeçalho e no título da jan
 facilita achar cada nó na tela):
 
 ```
-python iniciar.py --n 3 --nomes Alice Bob Carol
+python src/iniciar.py --n 3 --nomes Alice Bob Carol
 ```
 
 Os nomes são associados aos ids na ordem (1 = Alice, 2 = Bob, …); ids sem nome
@@ -67,9 +70,9 @@ ficam sem nome.
 `nos.json` já pronto) e então, em cada terminal:
 
 ```
-python no.py --id 1 --config nos.json
-python no.py --id 2 --config nos.json
-python no.py --id 3 --config nos.json
+python src/no.py --id 1 --config nos.json
+python src/no.py --id 2 --config nos.json
+python src/no.py --id 3 --config nos.json
 ```
 
 Não é preciso subir todos os nós do catálogo ao mesmo tempo: o sistema funciona
@@ -78,7 +81,7 @@ com o subconjunto que estiver no ar.
 Para identificar melhor o nó na tela, passe um nome com `--nome`:
 
 ```
-python no.py --id 1 --nome Alice --config nos.json
+python src/no.py --id 1 --nome Alice --config nos.json
 ```
 
 O nome é só para exibição (cabeçalho e título da janela); a coordenação continua
@@ -88,14 +91,14 @@ usando o `--id`. Também dá para definir ou trocar o nome depois, pela própria
 ### 3.3 Testes automatizados
 
 ```
-python teste.py
+python testes/teste.py
 ```
 
 Sobe nós de verdade (processos separados, só rede), cada um executa um roteiro de
 comandos e grava a saída; o script compara as saídas. Cobre: ordem total idêntica
 com 5 e 15 nós, criação de grupo com membros escolhidos, conversa privada, queda
 do líder com reeleição pelo anel e continuidade da numeração, e a captura do
-estado global. O modo sem interface (`python no.py --id K --sem-interface
+estado global. O modo sem interface (`python src/no.py --id K --sem-interface
 --script <arquivo> --saida <arquivo>`) também serve para montar cenários próprios
 para o relatório.
 
