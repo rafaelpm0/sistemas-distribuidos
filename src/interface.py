@@ -53,7 +53,11 @@ class Janela:
         envio = tk.Frame(self.janela)
         envio.pack(fill="x", padx=8, pady=4)
         tk.Label(envio, text="Conversa:").grid(row=0, column=0, sticky="w")
-        self.seletor_conversa = tk.OptionMenu(envio, self.grupo_escolhido, GERAL)
+        # Menubutton (nao OptionMenu) para o botao mostrar o nome amigavel enquanto
+        # a variavel guarda o id do grupo.
+        self.seletor_conversa = tk.Menubutton(envio, text="geral", relief="raised", borderwidth=1, anchor="w")
+        self.menu_conversa = tk.Menu(self.seletor_conversa, tearoff=0)
+        self.seletor_conversa["menu"] = self.menu_conversa
         self.seletor_conversa.grid(row=0, column=1, sticky="w")
         self.campo_texto = tk.Entry(envio, width=60)
         self.campo_texto.grid(row=1, column=0, columnspan=2, sticky="we", pady=2)
@@ -148,7 +152,6 @@ class Janela:
     # ------------------------------------------------------------------ paineis
 
     def _atualizar_paineis(self):
-        conversa = self.grupo_escolhido.get()
         with self.nucleo.trava_estado:
             papel = "LIDER" if self.nucleo.eleicao.sou_lider else "comum"
             relogio = str(self.nucleo.relogio)
@@ -156,9 +159,7 @@ class Janela:
             pendentes = len(self.nucleo.ordem.pendentes)
             conversas = self.nucleo.grupos.conversas_visiveis()
             linhas_local = [self._formatar_local(evento) for evento in self.nucleo.ordem_local]
-            # So as mensagens da conversa selecionada, na ordem global (num_seq).
-            linhas_mensagens = [self._formatar_mensagem(m) for m in self.nucleo.ordem_global
-                                if m.get("grupo") == conversa]
+            mensagens = list(self.nucleo.ordem_global)  # copia rasa sob a trava
 
         cabecalho = f"No {self.nucleo.meu_id}"
         if self.nucleo.meu_nome:
@@ -168,21 +169,41 @@ class Janela:
         self.rotulo_relogio.config(text=relogio)
         self.rotulo_buffer.config(text=f"Proximo num_seq esperado: {esperado}\nBuffer pendentes: {pendentes}")
 
-        nomes_conversa = {grupo_id: nome for grupo_id, nome in conversas}
+        # Ajusta o seletor primeiro; so entao filtra as mensagens pela conversa ativa.
+        self._recarregar_seletor(conversas)
+        conversa = self.grupo_escolhido.get()
+        info = {grupo_id: (nome, membros) for grupo_id, nome, membros in conversas}
+        nome_sel, membros_sel = info.get(conversa, (conversa, []))
         self.rotulo_mensagens.config(
-            text=f"Mensagens do chat - {nomes_conversa.get(conversa, conversa)} (ordem global, por num_seq)")
-        self._recarregar_seletor([grupo_id for grupo_id, _ in conversas], nomes_conversa)
+            text=f"Mensagens do chat - {self._rotulo_conversa(conversa, nome_sel, membros_sel)}"
+                 f"  (ordem global, por num_seq)")
+        linhas_mensagens = [self._formatar_mensagem(m) for m in mensagens
+                            if m.get("grupo") == conversa]
         _preencher(self.texto_ordem_local, linhas_local)
         _preencher(self.texto_mensagens, linhas_mensagens)
 
-    def _recarregar_seletor(self, ids_grupos, nomes):
-        menu = self.seletor_conversa["menu"]
-        menu.delete(0, "end")
-        for grupo_id in ids_grupos:
-            rotulo = nomes.get(grupo_id, grupo_id)
-            menu.add_command(label=rotulo, command=lambda g=grupo_id: self._escolher_conversa(g))
-        if self.grupo_escolhido.get() not in ids_grupos:
+    def _rotulo_conversa(self, grupo_id, nome, membros):
+        # Texto amigavel de uma conversa para o seletor e o cabecalho do painel.
+        if grupo_id == GERAL:
+            return "geral (todos os nos)"
+        lista = ", ".join(f"No {m}" for m in membros)
+        if grupo_id.startswith("priv-"):
+            outro = next((m for m in membros if m != self.nucleo.meu_id), None)
+            return f"conversa privada com No {outro}"
+        return f"{nome} [membros: {lista}]"
+
+    def _recarregar_seletor(self, conversas):
+        ids = [grupo_id for grupo_id, _, _ in conversas]
+        if self.grupo_escolhido.get() not in ids:
             self.grupo_escolhido.set(GERAL)
+        atual = self.grupo_escolhido.get()
+        self.menu_conversa.delete(0, "end")
+        for grupo_id, nome, membros in conversas:
+            rotulo = self._rotulo_conversa(grupo_id, nome, membros)
+            self.menu_conversa.add_command(label=rotulo,
+                                           command=lambda g=grupo_id: self._escolher_conversa(g))
+            if grupo_id == atual:
+                self.seletor_conversa.config(text=rotulo)
 
     def _escolher_conversa(self, grupo_id):
         # Troca a conversa ativa e repinta na hora (sem esperar o proximo evento).
@@ -198,11 +219,19 @@ class Janela:
 
     def _formatar_mensagem(self, mensagem):
         num_seq = mensagem.get("num_seq")
-        origem = mensagem.get("origem")
+        autor = self._rotulo_autor(mensagem)
         payload = mensagem.get("payload", {})
         if "acao" in payload:
-            return f"#{num_seq:<3} -- conversa criada pelo no {origem} --"
-        return f"#{num_seq:<3} No {origem}: {payload.get('texto', '')}"
+            membros = ", ".join(f"No {m}" for m in sorted(payload.get("membros", [])))
+            return (f"#{num_seq:<3} -- grupo \"{payload.get('nome', '')}\" criado por {autor}"
+                    f"  (membros: {membros}) --")
+        return f"#{num_seq:<3} {autor}: {payload.get('texto', '')}"
+
+    def _rotulo_autor(self, mensagem):
+        # Nome do autor (se ele definiu um) + o id do no, que a mensagem carrega.
+        origem = mensagem.get("origem")
+        nome = mensagem.get("nome_origem")
+        return f"{nome} (No {origem})" if nome else f"No {origem}"
 
     # ------------------------------------------------------------------ log / snapshot
 

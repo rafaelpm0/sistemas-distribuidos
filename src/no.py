@@ -79,6 +79,7 @@ def _gravar_saida(nucleo, caminho):
                 "num_seq": m.get("num_seq"),
                 "id_msg": m.get("id_msg"),
                 "origem": m.get("origem"),
+                "nome_origem": m.get("nome_origem"),
                 "grupo": m.get("grupo"),
                 "resumo": m.get("payload", {}).get("texto", "[" + m.get("payload", {}).get("acao", "?") + "]"),
             }

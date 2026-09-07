@@ -524,6 +524,7 @@ Um dicionário serializado com `json.dumps` (`mensagem.py`). Campos:
 | `destino` | sempre | Id do nó alvo ou `"todos"`. Quem não é o alvo ignora. |
 | `seq_origem` | mensagens de chat | Contador FIFO por origem, para detectar perda/lacuna sobre UDP. |
 | `id_msg` | mensagens de chat | `"{origem}:{seq_origem}"`. Casa pedido ↔ entrega e remove duplicatas. |
+| `nome_origem` | mensagens de chat | Nome amigável do autor no momento do envio (ou `null`). **Só para exibição** — não entra em nenhuma decisão de coordenação. |
 | `relogio_vetorial` | mensagens de chat | Cópia do vetor da origem no momento do envio. |
 | `grupo` | mensagens de chat | `"geral"`, `"priv-a-b"` (a < b) ou o id de um grupo nomeado `"g-<criador>-<seq>"`. |
 | `num_seq` | só `CHAT_ENTREGA` | Número de sequência **global** atribuído pelo líder. **Define a ordem total.** |
@@ -668,8 +669,8 @@ FIFO **sem usar unicast**.
   = não há duas threads mexendo no estado do protocolo ao mesmo tempo.
 - `_novo_pedido(grupo, payload)`: `seq_origem_atual += 1`; `vetor =
   relogio.evento_envio()`; `id_msg = "{meu_id}:{seq}"`; monta `CHAT_PEDIDO`
-  (`destino = lider_atual`); guarda em `enviadas_recentes`; `aguardar_carimbo`;
-  difunde.
+  (`destino = lider_atual`, `nome_origem = meu_nome`); guarda em
+  `enviadas_recentes`; `aguardar_carimbo`; difunde.
 - `entregar_mensagem(m)`: chamado pela `OrdemTotal` quando um `num_seq` sai do
   buffer em ordem. Se a origem é outra → `relogio.ao_entregar`. Acrescenta a
   `ordem_global`. Se `payload.acao` → aplica no `RegistroGrupos`; senão, se membro
@@ -687,15 +688,21 @@ Tkinter, uma janela por nó. Elementos exigidos pelo R5, todos presentes:
 - **Nome deste nó:** campo + botão "Definir nome" (também via `--nome`).
 - **Enviar para nó específico:** "Nova conversa privada" escolhe o id e abre
   `priv-a-b`.
-- **Enviar para o grupo:** seletor de conversa + campo + "Enviar".
-- **Criar grupo:** diálogo com nome + checkboxes de todos os ids.
+- **Enviar para o grupo:** seletor de conversa + campo + "Enviar". O seletor é um
+  `tk.Menubutton` (não `OptionMenu`) para o botão mostrar o **nome amigável e os
+  membros** (`Equipe [membros: No 1, No 2]`) enquanto a variável guarda o id
+  interno do grupo (`g-2-1`).
+- **Criar grupo:** diálogo com nome + checkboxes de todos os ids. A primeira linha
+  da conversa criada mostra o nome e os membros.
 - **Ordem local:** cada envio e cada entrega **observados por este nó**, na ordem
   em que aconteceram.
 - **Mensagens do chat:** as mensagens **da conversa selecionada** no seletor, na
-  ordem global (`#num_seq`). Trocar de conversa troca a vista. Para a mesma
-  conversa (ex.: `geral`), a lista é **idêntica em todos os nós** — evidência da
-  ordem total (R4). Mensagens de conversas de que o nó não participa não aparecem
-  (a conversa nem está no seletor), então a tela não fica poluída com "restrito".
+  ordem global (`#num_seq`). Cada linha mostra o autor por **nome e id**
+  (`Alice (No 1): ...`) quando o autor definiu um nome — o nome viaja na mensagem
+  (`nome_origem`), então todos os nós o veem. Trocar de conversa troca a vista.
+  Para a mesma conversa (ex.: `geral`), a lista é **idêntica em todos os nós** —
+  evidência da ordem total (R4). Mensagens de conversas de que o nó não participa
+  não aparecem (a conversa nem está no seletor).
 - **Extras:** relógio vetorial atual, `proximo num_seq esperado`, buffer de
   pendentes, log do sistema.
 - Botões: "Capturar estado global", "Forçar eleição", "Simular queda".
@@ -858,9 +865,10 @@ favor**: mostra domínio do modelo.)*
 4. **Snapshot pressupõe canais FIFO e confiáveis.** Reconstruímos FIFO por
    `seq_origem`; sob perda de datagrama durante o snapshot, um canal pode ficar
    incompleto. Em `localhost` os canais quase sempre aparecem vazios.
-5. **Nome do nó é local.** Serve só para identificar a janela; não é propagado na
-   rede, então um nó não mostra o nome que os outros escolheram — as mensagens
-   sempre identificam o autor por `No <id>`.
+5. **Nome do nó é cosmético.** Vai junto de cada mensagem de chat (`nome_origem`)
+   só para a tela mostrar "Alice (No 1)"; **não entra em nenhuma decisão** (ordem,
+   eleição, snapshot usam sempre o id). Trocar o nome só afeta mensagens enviadas
+   depois; mensagens antigas guardam o nome que valia na hora.
 6. **Detecção de falha não é perfeita** (modelo assíncrono — Seção 3.8). Um nó
    muito lento pode ser suspeitado como caído e disparar uma eleição desnecessária.
 7. **Sem recuperação:** um nó que caiu não reingressa no meio da simulação.
@@ -901,8 +909,8 @@ Prepare **antes**: terminal na raiz do projeto; janelas organizadas lado a lado.
    id, eleição de boot — §3.7).
 2. **Ordem total (R4):** com `geral` selecionado nos 3 nós, envie 2–3 mensagens
    rápidas de nós diferentes. Mostre o painel **Mensagens do chat** das 3 janelas
-   lado a lado: **mesma sequência de `#num_seq`** em todas. Esse é o critério de
-   correção.
+   lado a lado: **mesma sequência de `#num_seq`** em todas, cada linha com o autor
+   (`Alice (No 1): ...`). Esse é o critério de correção.
 3. **Relógio vetorial (§3.4):** aponte o vetor mudando a cada entrega; comente que
    ele mostra causalidade, não decide a ordem.
 4. **Criar grupo (R2):** no nó 1, "Criar grupo", nome "Equipe", marque o nó 2.

@@ -196,7 +196,7 @@ class Nucleo:
 
         pedido = montar(CHAT_PEDIDO, origem=self.meu_id, destino=self.eleicao.lider_atual,
                         grupo=grupo_id, id_msg=id_msg, seq_origem=self.seq_origem_atual,
-                        relogio_vetorial=vetor, payload=payload)
+                        relogio_vetorial=vetor, nome_origem=self.meu_nome, payload=payload)
 
         self.enviadas_recentes[id_msg] = pedido
         if len(self.enviadas_recentes) > TAMANHO_HISTORICO:

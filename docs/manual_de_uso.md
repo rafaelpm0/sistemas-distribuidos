@@ -113,13 +113,13 @@ para o relatório.
 |------|----------------|
 | Cabeçalho | `No <id>` e, se definido, o nome do nó; e o papel (líder ou comum). |
 | "Nome deste nó" + "Definir nome" | Campo para digitar/alterar o nome do nó em tempo de execução (mesma coisa que o `--nome`, mas pela tela). |
-| Seletor "Conversa" | Escolhe a conversa ativa: `geral`, um grupo de que o nó é membro, ou uma conversa privada. **Também define o que o painel "Mensagens do chat" mostra.** |
+| Seletor "Conversa" | Escolhe a conversa ativa: `geral`, um grupo de que o nó é membro, ou uma conversa privada. Mostra o **nome amigável** e os **membros** (ex.: `Equipe [membros: No 1, No 2]`), não o id interno. **Também define o que o painel "Mensagens do chat" mostra.** |
 | Campo de texto + "Enviar" | Envia a mensagem para a conversa selecionada. |
 | "Criar grupo" | Nome do grupo + seleção de membros; abre a conversa nos nós escolhidos. |
 | "Nova conversa privada" | Escolhe o id do outro nó e abre a conversa `priv-a-b`. |
 | Painel "Relógio vetorial" | O vetor atual do nó e o `num_seq` que ele espera entregar em seguida. |
 | **Ordem local** | Tudo que **este** nó emitiu ou entregou, na ordem em que aconteceu. |
-| **Mensagens do chat** | As mensagens **da conversa selecionada**, na ordem global (`num_seq`). Trocar de conversa no seletor troca o que aparece aqui. Para a mesma conversa (ex.: `geral`), a lista é **idêntica em todos os nós** — é a evidência da ordem total (R4). |
+| **Mensagens do chat** | As mensagens **da conversa selecionada**, na ordem global (`num_seq`). Cada linha mostra o autor por nome e id (`Alice (No 1): ...`) — o nome viaja na mensagem, então aparece em todos os nós. Trocar de conversa no seletor troca o que aparece aqui. Para a mesma conversa (ex.: `geral`), a lista é **idêntica em todos os nós** — é a evidência da ordem total (R4). |
 | Log do sistema | Eleições, marcadores de snapshot, retransmissões, abertura de conversa privada pelo outro lado. |
 | "Capturar estado global" | Dispara o snapshot de Chandy-Lamport. |
 | "Forçar eleição" | Inicia o algoritmo do anel sem esperar o líder cair. |
@@ -142,9 +142,11 @@ vê continua sendo a ordem global.
 
 ### Criar um grupo com membros escolhidos
 "Criar grupo" → digite o nome → marque os ids que vão participar (você entra
-automaticamente) → confirmar. O grupo aparece no seletor "Conversa" nos nós
-membros. Como o pedido passa pelo sequenciador do líder, todos os nós registram o
-grupo na mesma posição da ordem global, antes de qualquer mensagem dele.
+automaticamente) → confirmar. O grupo aparece no seletor "Conversa" dos nós membros
+pelo **nome** e com a **lista de membros** ao lado; a primeira linha da conversa é
+`-- grupo "Nome" criado por No X (membros: ...) --`. Como o pedido passa pelo
+sequenciador do líder, todos os nós registram o grupo na mesma posição da ordem
+global, antes de qualquer mensagem dele.
 
 ### Abrir e usar uma conversa privada
 "Nova conversa privada" → escolha o id do outro nó. A conversa `priv-a-b` aparece

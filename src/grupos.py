@@ -66,9 +66,9 @@ class RegistroGrupos:
         return grupo["nome"] if grupo else grupo_id
 
     def conversas_visiveis(self):
-        # (grupo_id, nome) de cada conversa de que este no participa.
+        # (grupo_id, nome, membros_ordenados) de cada conversa de que este no participa.
         visiveis = []
         for grupo_id, grupo in self.grupos.items():
             if self.meu_id in grupo["membros"]:
-                visiveis.append((grupo_id, grupo["nome"]))
+                visiveis.append((grupo_id, grupo["nome"], sorted(grupo["membros"])))
         return visiveis

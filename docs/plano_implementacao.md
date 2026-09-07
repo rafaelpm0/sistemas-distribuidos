@@ -92,6 +92,7 @@ Um dict serializado com `json.dumps`. Campos:
 | `relogio_vetorial` | mensagens de chat | Cópia do vetor da origem no momento do envio (para causalidade/tela). |
 | `grupo` | mensagens de chat | `"geral"`, `"priv-a-b"` (a < b), ou o id de um grupo nomeado `"g-<criador>-<seq>"`. |
 | `id_msg` | mensagens de chat | `"{origem}:{seq_origem}"`. Identifica a mensagem para casar pedido/entrega e remover duplicatas. |
+| `nome_origem` | mensagens de chat | Nome amigável do autor (ou `null`). Só para exibição na tela; não coordena nada. |
 | `num_seq` | só `CHAT_ENTREGA` | Número de sequência **global** atribuído pelo líder. Define a ordem total. |
 | `carimbado_por` | só `CHAT_ENTREGA` | Id do líder que sequenciou (para o log/relatório). |
 | `payload` | sempre | Dados do tipo. Numa mensagem de chat é `{"texto": "..."}` **ou** uma ação de grupo `{"acao": "criar_grupo", "nome": "...", "membros": [...]}`. Em controle: `{"ids_vistos": [...]}`, `{"lider": 7, "proximo_num_seq": 42}`, etc. |
@@ -382,24 +383,24 @@ Layout de uma janela (uma por nó):
 
 ```
 +---------------------------------------------------------------+
-| Nó 3 - Alice   |   Papel: comum                               |
-| Nome deste nó: [ Alice        ] [ Definir nome ]              |
+| Nó 3 - Carol   |   Papel: comum                               |
+| Nome deste nó: [ Carol        ] [ Definir nome ]              |
 +----------------------------+--------------------------------- +
-| Conversa: [ geral         v]| Relógio vetorial: [1:4, 2:2, 3:5]|
-|   (geral / Trabalho SD /   | Próx. num_seq esperado: 12       |
-|    priv-3-5 / ...)          | Buffer pendentes: 1              |
-| [ digite a mensagem      ] |                                  |
-| [ Enviar ]                 |                                  |
-| [ Criar grupo ] [ Nova conversa privada ]                     |
+| Conversa: [ Trabalho SD [membros: No 1, No 3, No 5] v ]        |
+|   (geral (todos) / Trabalho SD [.] / conversa privada com No 5)|
+| [ digite a mensagem      ] | Relógio vetorial: [1:4, 2:2, 3:5]|
+| [ Enviar ]                 | Próx. num_seq esperado: 12       |
+| [ Criar grupo ] [ Nova conversa privada ]  Buffer pendentes: 1 |
 +----------------------------+----------------------------------+
 | ORDEM LOCAL (o que este nó emitiu/observou)                   |
 |  envio    G  "oi"            v=[1:4,2:2,3:5]                   |
 |  entrega  #10 de 7 "e ai"    v=[1:4,2:2,3:5]                   |
 +---------------------------------------------------------------+
-| MENSAGENS DO CHAT - geral (ordem global, por num_seq)         |
-|  #08  No 2: bom dia                                           |
-|  #10  No 7: e ai                                              |
-|  (as mensagens de priv-3-5 aparecem ao selecionar priv-3-5)   |
+| MENSAGENS DO CHAT - Trabalho SD [membros: No 1, No 3, No 5]    |
+|  #05  -- grupo "Trabalho SD" criado por Carol (No 3) (memb...) |
+|  #08  Alice (No 1): bom dia                                   |
+|  #10  Carol (No 3): e ai                                      |
+|  (trocar de conversa no seletor troca o que aparece aqui)     |
 +---------------------------------------------------------------+
 | LOG DO SISTEMA                                                |
 |  eleição iniciada por nó 4 ... COORDENADOR: líder = 7         |
