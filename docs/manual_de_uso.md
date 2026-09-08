@@ -69,8 +69,14 @@ ficam sem nome.
 
 ### 3.2 Forma manual (uma janela por terminal)
 
-Útil para ver a tela de cada nó separada. Primeiro gere o catálogo (ou use um
-`nos.json` já pronto) e então, em cada terminal:
+Útil para ver a tela de cada nó separada. O `nos.json` não vem no repositório (é
+gerado); crie-o uma vez com:
+
+```
+python src/iniciar.py --n 3 --apenas-config
+```
+
+e então, em cada terminal:
 
 ```
 python src/no.py --id 1 --config nos.json

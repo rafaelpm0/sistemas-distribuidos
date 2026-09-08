@@ -1,0 +1,6 @@
+# Catalogo de nos: gerado por src/iniciar.py a cada execucao, nao e codigo-fonte.
+nos.json
+
+# Artefatos do Python
+__pycache__/
+*.pyc

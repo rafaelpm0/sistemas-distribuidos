@@ -8,6 +8,13 @@ Documentos complementares no diretório `docs/`: `manual_de_uso.md` (como execut
 `plano_implementacao.md` (projeto detalhado por módulo) e `manual_teorico.md`
 (fundamentação teórica aprofundada e roteiro do seminário).
 
+**Equipe:**
+
+1. Rafael Pinho Medeiros
+2. Lucas Bitencourt
+3. Vinícius Faraco Madalena
+4. Guilherme Da Silva Schveitzer
+
 ---
 
 ## Sumário
@@ -26,13 +33,13 @@ Documentos complementares no diretório `docs/`: `manual_de_uso.md` (como execut
 
 ## 1. Descrição do problema e do tema escolhido
 
-O trabalho pede um **sistema distribuído de comunicação de grupo** com múltiplos nós
-(configurável, testado com até 15), exercitando três blocos de teoria: **relógios
-lógicos**, **ordem total de mensagens difundidas** e **captura de estado global
-consistente**. Os nós só podem se comunicar por **mensagens de rede** — é proibido
-qualquer memória, banco, arquivo ou variável compartilhada como canal de
-coordenação. A única exceção é um arquivo de configuração estático (`nos.json`),
-lido apenas na inicialização, servindo de catálogo de endereços.
+O trabalho pede um **sistema de comunicação de grupo** com vários nós (a quantidade
+é configurável; testamos com até 15). Ele junta três assuntos da disciplina:
+**relógios lógicos**, **ordem total das mensagens enviadas ao grupo** e **captura de
+um estado global consistente**. Os nós só podem conversar por **mensagens de rede**
+— não vale usar memória, banco de dados, arquivo ou variável compartilhada para
+coordená-los. A única exceção é um arquivo de configuração fixo (`nos.json`), lido
+só quando o nó inicia, que serve de lista de endereços.
 
 **Tema escolhido: chat distribuído.** Cada nó é um participante, executado como um
 **processo independente do sistema operacional**, com estado em memória privada. O
@@ -65,24 +72,21 @@ Mapa dos requisitos do roteiro:
 
 ## 2. Papel de cada membro da equipe
 
-> **A equipe deve substituir os rótulos "Integrante A/B/C/D" pelos nomes reais.**
-> O histórico de commits do repositório está em nome de **Rafael Pinho Medeiros**.
-
-A divisão foi feita por **subsistema**, de modo que cada integrante é responsável
-por um conjunto coeso de módulos e pelas seções correspondentes do relatório. As
-**decisões de projeto** (transporte, abordagem de ordem total, algoritmo de
+O trabalho foi dividido por **subsistema**: cada integrante cuidou de um conjunto
+de módulos que se encaixam e das seções do relatório ligadas a eles. As
+**decisões de projeto** (transporte, forma de garantir a ordem total, algoritmo de
 eleição, mecanismo de estado global) foram discutidas e fechadas **por toda a
-equipe** antes da implementação.
+equipe** antes de começar a programar.
 
 | Integrante | Subsistema | Módulos | Seções do relatório |
 |------------|------------|---------|---------------------|
-| **A** | Camada de rede e formato de mensagens | `rede.py`, `mensagem.py`, `configuracao.py` | 4 (endereços de rede), parte de 3 (fluxo), parte de 6 (limitações de UDP) |
-| **B** | Ordem total (sequenciador) e relógio lógico | `ordem_total.py`, `relogio.py`, integração no `nucleo.py` | 8 (ordem total + exemplo numérico), parte de 3 |
-| **C** | Coordenação: eleição de líder e estado global | `eleicao.py`, `snapshot.py` | 8 (eleição de líder), 9 (estado global), parte de 6 |
-| **D** | Aplicação, interface e validação | `grupos.py`, `interface.py`, `iniciar.py`, `no.py`, `testes/teste.py` | 1 (descrição), 3 (arquitetura e diagrama), 5 (simulações e prints), 7 (execução) |
+| Rafael Pinho Medeiros | Camada de rede e formato de mensagens | `rede.py`, `mensagem.py`, `configuracao.py` | 4 (endereços de rede), parte de 3 (fluxo), parte de 6 (limitações de UDP) |
+|  Guilherme Da Silva Schveitzer | Ordem total (sequenciador) e relógio lógico | `ordem_total.py`, `relogio.py`, integração no `nucleo.py` | 8 (ordem total + exemplo numérico), parte de 3 |
+| Vinícius Faraco Madalena | Coordenação: eleição de líder e estado global | `eleicao.py`, `snapshot.py` | 8 (eleição de líder), 9 (estado global), parte de 6 |
+| Lucas Bitencourt | Aplicação, interface e validação | `grupos.py`, `interface.py`, `iniciar.py`, `no.py`, `testes/teste.py` | 1 (descrição), 3 (arquitetura e diagrama), 5 (simulações e prints), 7 (execução) |
 
-Tarefas transversais (todos): redação e revisão do relatório, execução conjunta
-dos cenários de simulação, preparação do seminário (Entrega 2).
+Tarefas de todos: escrever e revisar o relatório, rodar juntos os cenários de
+simulação e preparar o seminário (Entrega 2).
 
 ---
 
@@ -158,40 +162,36 @@ campo `destino` preenchido; quem não é o alvo descarta.
 
 ### 3.4 Justificativa da arquitetura
 
-A decisão central foi **usar exclusivamente multicast UDP** (um único grupo, um
-sequenciador para a ordem total) e **não usar unicast em lugar nenhum**. Os dois
-motivos:
+A decisão central foi **usar só multicast UDP**: um único grupo e um sequenciador
+para a ordem total. Dois motivos:
 
-**(a) Simplicidade de implementação do multicast.** A comunicação de grupo é a
-essência de um chat: um envio precisa chegar a todos os participantes. O multicast
-IP faz isso nativamente — um único `sendto` alcança o grupo inteiro. Com isso a
-camada de rede fica minúscula (`rede.py` tem ~60 linhas): não é preciso manter N
-conexões TCP por nó, nem iterar manualmente sobre a lista de nós a cada mensagem de
-grupo, nem gerenciar reconexões. A alternativa unicast/TCP daria entrega confiável e
-FIFO "de graça", mas ao custo de muito mais código de conexão e de uma difusão
-manual para cada mensagem de grupo — menos fiel à ideia de "comunicação de grupo
-nativa" que o trabalho pede.
+**(a) O multicast deixa a comunicação de grupo simples.** Num chat, cada mensagem
+precisa chegar a todos. O multicast IP já faz isso: um único `sendto` alcança o
+grupo inteiro. Assim a camada de rede fica pequena (`rede.py` tem cerca de 60
+linhas) — não precisamos abrir e manter uma conexão para cada nó, nem repetir o
+envio nó a nó, nem tratar reconexão. Com unicast/TCP teríamos entrega confiável e
+em ordem sem esforço, mas em troca de bem mais código e de um envio repetido para
+cada destinatário.
 
-**(b) Conversas privadas tratadas como parte do multicast.** A equipe optou por
-modelar a conversa privada como um **grupo de 2 membros** (`priv-a-b`), cujas
-mensagens trafegam **no mesmo grupo multicast** e passam **pelo mesmo
-sequenciador**, com filtragem apenas lógica na exibição — em vez de abrir um canal
-unicast separado entre os dois nós. A consequência é que **existe um único
-mecanismo de transporte e um único mecanismo de ordenação para tudo**: chat geral,
-chat de grupo, chat privado, criação de grupo e mensagens de controle seguem o
-mesmo caminho e recebem `num_seq` da mesma fonte. Isso elimina classes inteiras de
-casos de borda (ex.: "uma mensagem privada e uma de grupo entregues em ordens
-diferentes em nós diferentes") e faz com que ordem total, privacidade e estado
-global reutilizem exatamente a mesma infraestrutura.
+**(b) A conversa privada também é um grupo.** Tratamos a conversa entre duas
+pessoas como um **grupo de 2 membros** (`priv-a-b`): as mensagens vão pelo **mesmo
+grupo multicast** e passam **pelo mesmo sequenciador**; o conteúdo privado só é
+escondido na hora de mostrar na tela. Não abrimos um canal separado entre os dois
+nós. Com isso há **um só jeito de transportar e um só jeito de ordenar** tudo —
+chat geral, chat de grupo, chat privado, criação de grupo e mensagens de controle
+seguem o mesmo caminho e pegam o `num_seq` da mesma fonte. Isso evita vários
+problemas (por exemplo, uma mensagem privada e uma de grupo aparecerem em ordens
+diferentes em nós diferentes) e faz a ordem total, a privacidade e o estado global
+usarem a mesma base.
 
 **Custo assumido:** UDP não é confiável (tratado na camada de ordenação — Seção 6)
-e o sequenciador vira um ponto crítico (tratado com eleição de líder — Seção 8).
+e o sequenciador vira um ponto fraco (tratado com eleição de líder — Seção 8).
 
 ---
 
 ## 4. Endereços de rede utilizados
 
-**Transporte: multicast UDP** (não unicast).
+**Transporte: multicast UDP.**
 
 | Item | Valor |
 |------|-------|
@@ -208,10 +208,9 @@ escutem a mesma porta do grupo.
 
 ### Tabela de nós (catálogo `nos.json`)
 
-O roteiro pede a tabela de endereços dos nós. O `nos.json` guarda, por nó, `id`,
-`host` e `porta` — mas **esses campos são apenas catálogo / referência**: a
-comunicação é 100% multicast e **nenhum socket faz `bind` nas portas por nó**. O
-`iniciar.py` gera as portas como `5000 + id`.
+O `nos.json` guarda, por nó, `id`, `host` e `porta` — mas **esses campos são só
+catálogo / referência**: a comunicação é toda multicast e **nenhum socket faz
+`bind` nas portas por nó**. O `iniciar.py` gera as portas como `5000 + id`.
 
 | Id do nó | Host (catálogo) | Porta (catálogo, apenas referência) |
 |----------|-----------------|-------------------------------------|
@@ -226,9 +225,9 @@ comunicação é 100% multicast e **nenhum socket faz `bind` nas portas por nó*
 | …  | 127.0.0.1 | 5000 + id |
 | 15 | 127.0.0.1 | 5015 |
 
-\* A porta de catálogo do nó 7 coincide numericamente com a porta do grupo
-(`5007`). Como as portas por nó **não são usadas** (não há `bind` nelas, só o
-grupo multicast recebe tráfego), a coincidência é inócua.
+\* A porta de catálogo do nó 7 é `5007`, a mesma do grupo. Isso não atrapalha: as
+portas por nó não são usadas — nenhum socket faz `bind` nelas, só o grupo
+multicast recebe tráfego.
 
 ---
 
@@ -237,7 +236,7 @@ grupo multicast recebe tráfego), a coincidência é inócua.
 Todos os cenários abaixo sobem **processos-nó de verdade** (`python src/no.py ...`),
 que só trocam mensagens pela rede. As saídas foram capturadas do modo sem
 interface (`--sem-interface --script <roteiro> --saida <arquivo.json>`), que grava
-o estado final de cada nó (fila de delivery, relógio, líder, grupos, snapshot).
+o estado final de cada nó (fila de entrega, relógio, líder, grupos, snapshot).
 
 ### Cenário 1 — Ordem total com mensagens quase simultâneas (5 nós)
 
@@ -246,7 +245,7 @@ tempo; em seguida o nó 2 cria o grupo "TrabalhoSD" com membros {2, 3, 5} e mand
 uma mensagem nele; o nó 1 abre conversa privada com o nó 3 e manda uma mensagem
 privada.
 
-**Fila de delivery — painel "Mensagens do chat" na conversa `geral`, nos 5 nós:**
+**Fila de entrega — painel "Mensagens do chat" na conversa `geral`, nos 5 nós:**
 
 ```
  Nó 1 (Alice)            Nó 2 (Bruno)            Nó 3 (Carla) / Nó 4 / Nó 5
@@ -258,9 +257,9 @@ privada.
 ```
 
 A fila interna completa (`ordem_global`), que inclui também as mensagens de grupo e
-privada, foi verificada como **byte a byte idêntica nos 5 nós** (comparação de
-`(num_seq, id_msg)` de todas as posições → `True`). O líder eleito no boot (maior
-id) é o **nó 5**, reconhecido por todos.
+a privada, foi conferida como **exatamente igual nos 5 nós** (comparando o
+`(num_seq, id_msg)` de todas as posições → `True`). O líder eleito no início (o de
+maior id) é o **nó 5**, reconhecido por todos.
 
 **Mesmo cenário, conversas restritas:**
 
@@ -291,8 +290,8 @@ No 4: lider=4 | #1..#4 antes-da-queda-{1..4}  #5..#8 depois-da-queda-{1..4}
 No 5: lider=5 | #1..#4 antes-da-queda-{1..4}          (encerrou aqui)
 ```
 
-Os 4 sobreviventes elegem o **nó 4** (maior id ativo), suas filas de delivery são
-**idênticas** e os `num_seq` **continuam 1..8 sem buraco** através da troca de
+Os 4 sobreviventes elegem o **nó 4** (maior id ativo), suas filas de entrega são
+**idênticas** e os `num_seq` **continuam 1..8 sem buraco** apesar da troca de
 líder.
 
 ### Cenário 3 — 15 nós, ordem total e estado global (suíte automatizada)
@@ -335,7 +334,7 @@ durante uma rajada ou com `ATRASO_ENVIO > 0` em `configuracao.py`.
 `python testes/teste.py` — **todas as verificações passam**:
 
 ```
-Teste 1: ordem total, criacao de grupo e conversa privada (5 nos)   [6/6 ok]
+Teste 1: ordem total, criacao de grupo e conversa privada (5 nos)   [7/7 ok]
 Teste 2: queda do lider e reeleicao pelo anel (5 nos)               [5/5 ok]
 Teste 3: 15 nos, ordem total e estado global (Chandy-Lamport)       [6/6 ok]
 RESULTADO: todos os testes passaram.
@@ -357,21 +356,23 @@ RESULTADO: todos os testes passaram.
    perder. Um sistema de produção replicaria o log por consenso (Raft/Paxos); está
    fora do escopo.
 
-3. **Latência da alternativa descartada (Abordagem A).** A abordagem descentralizada
-   (relógio vetorial + desempate determinístico + estabilidade) evita o ponto único,
-   mas para entregar uma mensagem cada nó precisa ter certeza de que nenhuma
-   mensagem com chave menor ainda pode chegar — o que exige aguardar "algo"
-   (mensagem ou ACK) de **todos** os nós, além de batimentos periódicos para não
-   travar quando um nó fica quieto. Mais latência de entrega e mais mensagens de
-   controle. Trocamos robustez a ponto único por simplicidade e latência baixa.
+3. **A alternativa descartada (Abordagem A) é mais lenta.** A abordagem
+   descentralizada (relógio vetorial + regra de desempate + espera por
+   estabilidade) não tem ponto único de falha, mas para entregar uma mensagem cada
+   nó precisa ter certeza de que nenhuma mensagem "menor" ainda vai chegar. Para
+   isso ele tem de esperar notícia (uma mensagem ou um ACK) de **todos** os outros
+   nós e ainda mandar sinais periódicos para não travar quando alguém fica quieto.
+   Resultado: entrega mais demorada e mais mensagens de controle. Preferimos abrir
+   mão da robustez a ponto único em troca de um código mais simples e de entrega
+   mais rápida.
 
 4. **Privacidade é lógica, não criptográfica.** O aplicativo não exibe mensagens de
    conversas de que o nó não participa, mas o datagrama chega fisicamente a todos os
    nós do grupo multicast.
 
-5. **O snapshot pressupõe canais FIFO e confiáveis.** Reconstruímos a ordem FIFO de
-   cada canal pelo `seq_origem`; sob perda de datagrama durante o snapshot, um canal
-   pode ficar incompleto.
+5. **O snapshot supõe canais em ordem e sem perda.** Reconstruímos a ordem de cada
+   canal pelo `seq_origem`; se um datagrama se perde durante o snapshot, aquele
+   canal pode ficar incompleto.
 
 6. **Detecção de falha imperfeita** (modelo assíncrono). Não há como distinguir com
    certeza um nó caído de um nó lento; um nó muito lento pode ser suspeitado e
@@ -406,7 +407,7 @@ raiz/
 ├── testes/    teste.py  (3 cenários automatizados com processos reais)
 ├── docs/      manual_de_uso.md, plano_implementacao.md, manual_teorico.md,
 │               relatorio.md, roteiro.pdf
-└── nos.json   catálogo gerado por src/iniciar.py
+└── nos.json   catálogo gerado por src/iniciar.py (não versionado)
 ```
 
 ### Como executar (a partir da raiz do projeto)
@@ -416,7 +417,8 @@ raiz/
 python src/iniciar.py --n 3            # (ou --n 8, --n 15)
 python src/iniciar.py --n 3 --nomes Alice Bruno Carla   # nomes opcionais
 
-# forma manual: uma janela por terminal
+# forma manual: gera o nos.json uma vez e sobe uma janela por terminal
+python src/iniciar.py --n 3 --apenas-config
 python src/no.py --id 1 --config nos.json
 python src/no.py --id 2 --config nos.json
 python src/no.py --id 3 --config nos.json
@@ -513,7 +515,8 @@ válida põe **A antes de C** — o sequenciador respeita a causalidade naturalm
 
 ### 8.3 Eleição de líder — algoritmo do anel (Chang & Roberts)
 
-**Premissa:** ids únicos e totalmente ordenados; vence o **maior id ativo**.
+**Condição:** cada nó tem um id único e os ids podem ser comparados entre si; vence
+o **maior id ativo**.
 
 **Detecção de falha.** Todo nó difunde `HEARTBEAT` a cada `INTERVALO_HEARTBEAT`
 (2 s). Se um nó fica sem heartbeat do líder por mais de `T_FALHA` (6 s = 3× o
@@ -564,8 +567,7 @@ mensagens já entregou), cópia do relógio vetorial, `lider_atual`, tamanho do 
 de pendentes e as últimas entregas. Para cada **canal lógico `j → i`** (as
 mensagens de chat que o nó `i` recebe do nó `j`, identificadas pelo campo `origem`):
 a lista de mensagens recebidas entre o registro do estado local e a chegada do
-marcador daquele canal. A ordem FIFO do canal é reconstruída pelo `seq_origem` —
-**sem usar unicast**.
+marcador daquele canal. A ordem de cada canal é reconstruída pelo `seq_origem`.
 
 **Passo a passo (`snapshot.py`):**
 
@@ -583,19 +585,18 @@ marcador daquele canal. A ordem FIFO do canal é reconstruída pelo `seq_origem`
 
 **Por que Chandy-Lamport:**
 
-- É a **solução canônica** vista em aula para o problema de estado global.
-- Respeita a regra "**somente mensagens de rede**" — os marcadores viajam no mesmo
-  grupo multicast.
-- **Não para o sistema** e **não exige relógio sincronizado**.
-- Produz um **corte consistente por construção**: nenhuma mensagem aparece como
-  recebida sem ter sido enviada (o marcador separa "antes" de "depois" em cada
-  canal). Comprovado no Cenário 4: todos os nós concordam no líder e no ponto da
-  fila global.
+- É a **solução clássica** vista em aula para o problema de estado global.
+- Respeita a regra "**só mensagens de rede**" — os marcadores viajam no mesmo grupo
+  multicast.
+- **Não para o sistema** e **não precisa de relógio sincronizado**.
+- Sempre produz um **corte consistente**: nenhuma mensagem aparece como recebida
+  sem ter sido enviada (o marcador separa o "antes" do "depois" em cada canal).
+  Comprovado no Cenário 4: todos os nós concordam no líder e no ponto da fila
+  global até onde entregaram.
 
-**Alternativa descartada — coleta centralizada pelo líder** ("o líder pergunta a
-todos e agrega as respostas"): seria mais simples de codar, mas (a) concentra tudo
-num **ponto único de falha** e (b) pode capturar um estado **inconsistente**, pois
-as respostas dos nós chegam em momentos diferentes e não há controle do conteúdo
-dos canais no instante do corte. Chandy-Lamport resolve os dois problemas pela
-própria definição, ao custo de um pouco mais de código de coordenação dos
-marcadores — custo que consideramos justificado.
+**Alternativa descartada — o líder pergunta a todos e junta as respostas:** seria
+mais fácil de programar, mas (a) coloca tudo num **ponto único de falha** e (b)
+pode capturar um estado **inconsistente**, já que as respostas dos nós chegam em
+momentos diferentes e não há controle sobre o que estava nos canais no instante do
+corte. Chandy-Lamport resolve os dois problemas pela própria definição; em troca,
+exige um pouco mais de código para coordenar os marcadores — o que vale a pena.

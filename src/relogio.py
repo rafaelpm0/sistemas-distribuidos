@@ -1,6 +1,6 @@
 # Relogio vetorial de um no.
 # Nao decide a ordem de entrega (isso e o num_seq do lider): serve para
-# causalidade, para a tela e para o exemplo numerico do relatorio.
+# acompanhar a causalidade entre eventos e para mostrar na tela.
 
 class RelogioVetorial:
 

@@ -31,10 +31,14 @@ def principal():
     analisador.add_argument("--config", default="nos.json")
     analisador.add_argument("--nomes", nargs="*", default=[],
                             help="nomes dos nos, na ordem dos ids (opcional)")
+    analisador.add_argument("--apenas-config", action="store_true",
+                            help="so gera o nos.json e sai, sem subir os nos")
     argumentos = analisador.parse_args()
 
     gerar_config(argumentos.n, argumentos.config)
     print(f"nos.json gerado para {argumentos.n} nos.")
+    if argumentos.apenas_config:
+        return
 
     processos = []
     for id_no in range(1, argumentos.n + 1):

@@ -492,7 +492,10 @@ roteiro pede a tabela de endereços no relatório.
 
 - `python src/iniciar.py --n 3` → gera `nos.json` com 3 nós e abre 3 janelas.
 - `python src/iniciar.py --n 8` e `--n 15` → idem (requisito R3, sem tocar no código).
-- Manual: `python src/no.py --id 3 --config nos.json` em cada terminal.
+- Manual: `python src/iniciar.py --n 3 --apenas-config` gera o `nos.json`; depois
+  `python src/no.py --id 3 --config nos.json` em cada terminal.
+
+O `nos.json` é gerado em cada execução e não é versionado (está no `.gitignore`).
 
 Na mesma máquina, `SO_REUSEADDR` (e `SO_REUSEPORT` onde existir) permite vários nós
 na mesma porta multicast; TTL baixo (1–2).

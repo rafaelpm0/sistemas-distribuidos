@@ -1,4 +1,4 @@
-# Tela de um no (requisito R5), em Tkinter.
+# Tela de um no, em Tkinter.
 # O Tkinter nao e thread-safe: o nucleo poe eventos numa fila e a janela
 # le essa fila a cada 100 ms; os botoes so chamam metodos do nucleo.
 

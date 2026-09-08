@@ -1,4 +1,4 @@
-# Ordem total das mensagens de grupo - Abordagem B (sequenciador definido pelo lider).
+# Ordem total das mensagens de grupo: o lider funciona como sequenciador.
 #
 # Um mesmo objeto tem dois papeis:
 #  - Sequenciador (so o lider): recebe CHAT_PEDIDO, atribui um num_seq global
